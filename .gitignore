@@ -1,0 +1,6 @@
+
+/target
+*.log
+settings.ron
+history.bin
+*.lock
