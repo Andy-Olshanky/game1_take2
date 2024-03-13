@@ -1,18 +1,78 @@
 //! Game project.
 use fyrox::{
-    core::pool::Handle,
-    event::Event,
+    core::{
+        algebra::Vector2, pool::Handle, reflect::prelude::*, type_traits::prelude::*,
+        visitor::prelude::*,
+    },
+    event::{ElementState, Event, WindowEvent},
     gui::message::UiMessage,
+    keyboard::{KeyCode, PhysicalKey},
     plugin::{Plugin, PluginConstructor, PluginContext, PluginRegistrationContext},
-    scene::Scene,
+    scene::{dim2::rigidbody::RigidBody, Scene},
+    script::{ScriptContext, ScriptTrait},
 };
 use std::path::Path;
+
+#[derive(Visit, Reflect, Debug, Clone, Default, TypeUuidProvider, ComponentProvider)]
+#[type_uuid(id = "2922cb59-aba7-46a1-aac7-5a3c6c3a7ded")]
+#[visit(optional)]
+struct Player {
+    move_left: bool,
+    move_right: bool,
+    jump: bool,
+}
+
+impl ScriptTrait for Player {
+    fn on_init(&mut self, #[allow(unused_variables)] ctx: &mut ScriptContext) {}
+
+    fn on_start(&mut self, #[allow(unused_variables)] ctx: &mut ScriptContext) {}
+
+    fn on_os_event(
+        &mut self,
+        #[allow(unused_variables)] event: &Event<()>,
+        #[allow(unused_variables)] ctx: &mut ScriptContext,
+    ) {
+        if let Event::WindowEvent { event, .. } = event {
+            if let WindowEvent::KeyboardInput { event, .. } = event {
+                if let PhysicalKey::Code(keycode) = event.physical_key {
+                    let is_pressed = event.state == ElementState::Pressed;
+
+                    match keycode {
+                        KeyCode::KeyA => self.move_left = is_pressed,
+                        KeyCode::KeyD => self.move_right = is_pressed,
+                        KeyCode::Space => self.jump = is_pressed,
+                        _ => (),
+                    }
+                }
+            }
+        }
+    }
+
+    fn on_update(&mut self, #[allow(unused_variables)] ctx: &mut ScriptContext) {
+        if let Some(rigidbody) = ctx.scene.graph[ctx.handle].cast_mut::<RigidBody>() {
+            let x_speed = if self.move_left {
+                3.0
+            } else if self.move_right {
+                -3.0
+            } else {
+                0.0
+            };
+
+            if self.jump {
+                rigidbody.set_lin_vel(Vector2::new(x_speed, 4.0));
+            } else {
+                rigidbody.set_lin_vel(Vector2::new(x_speed, rigidbody.lin_vel().y));
+            }
+        }
+    }
+}
 
 pub struct GameConstructor;
 
 impl PluginConstructor for GameConstructor {
-    fn register(&self, _context: PluginRegistrationContext) {
-        // Register your scripts here.
+    fn register(&self, context: PluginRegistrationContext) {
+        let script_constructors = &context.serialization_context.script_constructors;
+        script_constructors.add::<Player>("Player");
     }
 
     fn create_instance(&self, scene_path: Option<&str>, context: PluginContext) -> Box<dyn Plugin> {
@@ -45,19 +105,11 @@ impl Plugin for Game {
         // Add your global update code here.
     }
 
-    fn on_os_event(
-        &mut self,
-        _event: &Event<()>,
-        _context: PluginContext,
-    ) {
+    fn on_os_event(&mut self, _event: &Event<()>, _context: PluginContext) {
         // Do something on OS event here.
     }
 
-    fn on_ui_message(
-        &mut self,
-        _context: &mut PluginContext,
-        _message: &UiMessage,
-    ) {
+    fn on_ui_message(&mut self, _context: &mut PluginContext, _message: &UiMessage) {
         // Handle UI events here.
     }
 
