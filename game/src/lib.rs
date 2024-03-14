@@ -20,6 +20,8 @@ struct Player {
     move_left: bool,
     move_right: bool,
     jump: bool,
+    already_jumped: bool,
+    jump_impulse: f32,
 }
 
 impl ScriptTrait for Player {
@@ -41,6 +43,7 @@ impl ScriptTrait for Player {
                         KeyCode::KeyA => self.move_left = is_pressed,
                         KeyCode::KeyD => self.move_right = is_pressed,
                         KeyCode::Space => self.jump = is_pressed,
+                        KeyCode::KeyS => self.already_jumped = is_pressed,
                         _ => (),
                     }
                 }
@@ -58,8 +61,10 @@ impl ScriptTrait for Player {
                 0.0
             };
 
-            if self.jump {
-                rigidbody.set_lin_vel(Vector2::new(x_speed, 4.0));
+            if self.jump && !self.already_jumped {
+                // rigidbody.set_lin_vel(Vector2::new(x_speed, 4.0));
+                rigidbody.apply_impulse(Vector2::new(0.0, self.jump_impulse));
+                self.already_jumped = true;
             } else {
                 rigidbody.set_lin_vel(Vector2::new(x_speed, rigidbody.lin_vel().y));
             }
