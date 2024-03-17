@@ -72,12 +72,21 @@ impl ScriptTrait for Player {
     }
 }
 
+#[derive(Visit, Reflect, Debug, Clone, Default, TypeUuidProvider, ComponentProvider)]
+#[type_uuid(id = "62069772-2d47-4828-b97c-fe43d720e628")]
+struct Ground;
+
+impl ScriptTrait for Ground {
+    fn on_update(&mut self, #[allow(unused_variables)] ctx: &mut ScriptContext) {}
+}
+
 pub struct GameConstructor;
 
 impl PluginConstructor for GameConstructor {
     fn register(&self, context: PluginRegistrationContext) {
         let script_constructors = &context.serialization_context.script_constructors;
         script_constructors.add::<Player>("Player");
+        script_constructors.add::<Ground>("Ground");
     }
 
     fn create_instance(&self, scene_path: Option<&str>, context: PluginContext) -> Box<dyn Plugin> {
