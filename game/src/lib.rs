@@ -8,10 +8,10 @@ use fyrox::{
     gui::message::UiMessage,
     keyboard::{KeyCode, PhysicalKey},
     plugin::{Plugin, PluginConstructor, PluginContext, PluginRegistrationContext},
-    scene::{dim2::rigidbody::RigidBody, Scene},
+    scene::{dim2::rigidbody::{self, RigidBody}, graph::Graph, Scene},
     script::{ScriptContext, ScriptTrait},
 };
-use std::path::Path;
+use std::{cell::RefCell, path::Path, rc::Rc};
 
 #[derive(Visit, Reflect, Debug, Clone, Default, TypeUuidProvider, ComponentProvider)]
 #[type_uuid(id = "2922cb59-aba7-46a1-aac7-5a3c6c3a7ded")]
@@ -61,12 +61,27 @@ impl ScriptTrait for Player {
                 0.0
             };
 
+            let graph = RefCell::new(&ctx.scene.graph);
+            self.check_ground_collision(graph, rigidbody);
+
             if self.jump && !self.already_jumped {
                 // rigidbody.set_lin_vel(Vector2::new(x_speed, 4.0));
                 rigidbody.apply_impulse(Vector2::new(0.0, self.jump_impulse));
                 self.already_jumped = true;
             } else {
                 rigidbody.set_lin_vel(Vector2::new(x_speed, rigidbody.lin_vel().y));
+            }
+        }
+    }
+}
+
+impl Player {
+    pub fn check_ground_collision(&mut self, graph: RefCell<&Graph>, rigidbody: &mut RigidBody) {
+        for pair in graph[rigidbody.children()[0]].as_collider().contacts(&graph.physics) {
+            if graph[graph[pair.collider1].parent()].has_script::<Ground>() || 
+            graph[graph[pair.collider2].parent()].has_script::<Ground>() {
+                self.already_jumped = false;
+                break;
             }
         }
     }
