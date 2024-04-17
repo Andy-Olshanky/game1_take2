@@ -8,7 +8,9 @@ use fyrox::{
     gui::message::UiMessage,
     keyboard::{KeyCode, PhysicalKey},
     plugin::{Plugin, PluginConstructor, PluginContext, PluginRegistrationContext},
-    scene::{dim2::rigidbody::{self, RigidBody}, Scene},
+    scene::{
+        collider::{self, Collider}, dim2::rigidbody::{self, RigidBody}, node::Node, Scene
+    },
     script::{ScriptContext, ScriptTrait},
 };
 use std::path::Path;
@@ -43,7 +45,6 @@ impl ScriptTrait for Player {
                         KeyCode::KeyA => self.move_left = is_pressed,
                         KeyCode::KeyD => self.move_right = is_pressed,
                         KeyCode::Space => self.jump = is_pressed,
-                        KeyCode::KeyS => self.already_jumped = is_pressed,
                         _ => (),
                     }
                 }
@@ -52,7 +53,7 @@ impl ScriptTrait for Player {
     }
 
     fn on_update(&mut self, #[allow(unused_variables)] ctx: &mut ScriptContext) {
-        if let Some(rigidbody) = ctx.scene.graph[ctx.handle].cast_mut::<RigidBody>() {
+        if let Some(rigidbody) = ctx.scene.graph[ctx.handle].cast::<RigidBody>() {
             let x_speed = if self.move_left {
                 3.0
             } else if self.move_right {
@@ -62,26 +63,39 @@ impl ScriptTrait for Player {
             };
 
             if self.already_jumped {
-                // check ground collision
                 self.check_ground_collision(ctx, rigidbody);
             }
-
-            if self.jump && !self.already_jumped {
-                // rigidbody.set_lin_vel(Vector2::new(x_speed, 4.0));
-                rigidbody.apply_impulse(Vector2::new(0.0, self.jump_impulse));
-                self.already_jumped = true;
-            } else {
-                rigidbody.set_lin_vel(Vector2::new(x_speed, rigidbody.lin_vel().y));
+            
+            if let Some(rigidbody) = ctx.scene.graph[ctx.handle].cast_mut::<RigidBody>() {
+                if self.jump && !self.already_jumped {
+                    rigidbody.apply_impulse(Vector2::new(0.0, self.jump_impulse));
+                    self.already_jumped = true;
+                } else {
+                    rigidbody.set_lin_vel(Vector2::new(x_speed, rigidbody.lin_vel().y));
+                }
             }
         }
     }
 }
 
 impl Player {
-    pub fn check_ground_collision(&mut self, ctx: &mut ScriptContext, rigidbody: &mut RigidBody) {
-        for pair in ctx.scene.graph[rigidbody.children()[0]].as_collider().contacts(&ctx.scene.graph.physics) {
-            if ctx.scene.graph[ctx.scene.graph[pair.collider1].parent()].has_script::<Ground>() || 
-            ctx.scene.graph[ctx.scene.graph[pair.collider2].parent()].has_script::<Ground>() {
+    pub fn check_ground_collision(&mut self, ctx: &ScriptContext, rigidbody: &RigidBody) {
+        // let handle = rigidbody.children();
+        // for node in 0..handle.len() {
+        //     print!("{}\n", node);
+        //     if ctx.scene.graph[handle[node]].is_collider() {
+        //         print!(":), {}\n", node);
+        //     }
+        // }
+        // let collider = ctx.scene.graph[handle[2]].as_collider2d();
+        // let pairs = collider.contacts(&ctx.scene.dim2.physics);
+        for pair in ctx.scene.graph[rigidbody.children()[2]]
+            .as_collider2d()
+            .contacts(&ctx.scene.graph.physics2d) {
+        // for pair in collider.contacts(&ctx.scene.graph.physics) {
+            if ctx.scene.graph[ctx.scene.graph[pair.collider1].parent()].has_script::<Ground>()
+                || ctx.scene.graph[ctx.scene.graph[pair.collider2].parent()].has_script::<Ground>()
+            {
                 self.already_jumped = false;
                 break;
             }
