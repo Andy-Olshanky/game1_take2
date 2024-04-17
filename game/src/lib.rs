@@ -1,15 +1,17 @@
 //! Game project.
 use fyrox::{
     core::{
-        algebra::Vector2, pool::Handle, reflect::prelude::*, type_traits::prelude::*,
-        visitor::prelude::*,
+        algebra::Vector2, pool::Handle, profiler::print, reflect::prelude::*, type_traits::prelude::*, visitor::prelude::*
     },
     event::{ElementState, Event, WindowEvent},
     gui::message::UiMessage,
     keyboard::{KeyCode, PhysicalKey},
     plugin::{Plugin, PluginConstructor, PluginContext, PluginRegistrationContext},
     scene::{
-        collider::{self, Collider}, dim2::rigidbody::{self, RigidBody}, node::Node, Scene
+        collider::{self, Collider},
+        dim2::rigidbody::{self, RigidBody},
+        node::Node,
+        Scene,
     },
     script::{ScriptContext, ScriptTrait},
 };
@@ -65,13 +67,12 @@ impl ScriptTrait for Player {
             if self.already_jumped {
                 self.check_ground_collision(ctx, rigidbody);
             }
-            
+
             if let Some(rigidbody) = ctx.scene.graph[ctx.handle].cast_mut::<RigidBody>() {
+                rigidbody.set_lin_vel(Vector2::new(x_speed, rigidbody.lin_vel().y));
                 if self.jump && !self.already_jumped {
                     rigidbody.apply_impulse(Vector2::new(0.0, self.jump_impulse));
                     self.already_jumped = true;
-                } else {
-                    rigidbody.set_lin_vel(Vector2::new(x_speed, rigidbody.lin_vel().y));
                 }
             }
         }
@@ -80,21 +81,11 @@ impl ScriptTrait for Player {
 
 impl Player {
     pub fn check_ground_collision(&mut self, ctx: &ScriptContext, rigidbody: &RigidBody) {
-        // let handle = rigidbody.children();
-        // for node in 0..handle.len() {
-        //     print!("{}\n", node);
-        //     if ctx.scene.graph[handle[node]].is_collider() {
-        //         print!(":), {}\n", node);
-        //     }
-        // }
-        // let collider = ctx.scene.graph[handle[2]].as_collider2d();
-        // let pairs = collider.contacts(&ctx.scene.dim2.physics);
         for pair in ctx.scene.graph[rigidbody.children()[2]]
             .as_collider2d()
-            .contacts(&ctx.scene.graph.physics2d) {
-        // for pair in collider.contacts(&ctx.scene.graph.physics) {
-            if ctx.scene.graph[ctx.scene.graph[pair.collider1].parent()].has_script::<Ground>()
-                || ctx.scene.graph[ctx.scene.graph[pair.collider2].parent()].has_script::<Ground>()
+            .contacts(&ctx.scene.graph.physics2d)
+        {
+            if ctx.scene.graph[ctx.scene.graph[pair.collider2].parent()].has_script::<Ground>()
             {
                 self.already_jumped = false;
                 break;
