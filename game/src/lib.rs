@@ -85,7 +85,8 @@ impl Player {
             .as_collider2d()
             .contacts(&ctx.scene.graph.physics2d)
         {
-            if ctx.scene.graph[ctx.scene.graph[pair.collider2].parent()].has_script::<Ground>()
+            if //ctx.scene.graph[ctx.scene.graph[pair.collider2].parent()].has_script::<Ground>() ||
+                ctx.scene.graph[ctx.scene.graph[pair.collider1].parent()].has_script::<Ground>()
             {
                 self.already_jumped = false;
                 break;
