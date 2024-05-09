@@ -1,16 +1,32 @@
 //! Game project.
 use fyrox::{
     core::{
-        algebra::Vector2, pool::Handle, profiler::print, reflect::prelude::*, type_traits::prelude::*, visitor::prelude::*
+        algebra::{Vector2, Vector3},
+        color::Color,
+        pool::Handle,
+        profiler::print,
+        reflect::prelude::*,
+        type_traits::prelude::*,
+        visitor::prelude::*,
     },
     event::{ElementState, Event, WindowEvent},
     gui::message::UiMessage,
     keyboard::{KeyCode, PhysicalKey},
+    material::Material,
     plugin::{Plugin, PluginConstructor, PluginContext, PluginRegistrationContext},
+    resource::texture::Texture,
     scene::{
+        base::BaseBuilder,
+        camera::CameraBuilder,
         collider::{self, Collider},
-        dim2::rigidbody::{self, RigidBody},
+        dim2::{
+            collider::{ColliderBuilder, ColliderShape},
+            rectangle::RectangleBuilder,
+            rigidbody::{self, RigidBody, RigidBodyBuilder},
+        },
         node::Node,
+        sprite::{Sprite, SpriteBuilder},
+        transform::TransformBuilder,
         Scene,
     },
     script::{ScriptContext, ScriptTrait},
@@ -26,10 +42,44 @@ struct Player {
     jump: bool,
     already_jumped: bool,
     jump_impulse: f32,
+    rigidbody: Handle<Node>,
 }
 
 impl ScriptTrait for Player {
-    fn on_init(&mut self, #[allow(unused_variables)] ctx: &mut ScriptContext) {}
+    fn on_init(&mut self, #[allow(unused_variables)] ctx: &mut ScriptContext) {
+        self.rigidbody = RigidBodyBuilder::new(
+            BaseBuilder::new()
+                .with_local_transform(
+                    TransformBuilder::new()
+                        // Offset player a bit.
+                        .with_local_position(Vector3::new(0.0, 3.7, 0.0))
+                        .build(),
+                )
+                .with_children(&[
+                    CameraBuilder::new(
+                        BaseBuilder::new().with_local_transform(
+                            TransformBuilder::new()
+                                .with_local_position(Vector3::new(0.0, 0.0, -5.0))
+                                .build(),
+                        ),
+                    )
+                    .build(&mut ctx.scene.graph),
+                    ColliderBuilder::new(BaseBuilder::new())
+                        .with_shape(ColliderShape::cuboid(0.5, 0.5))
+                        .build(&mut ctx.scene.graph),
+                    RectangleBuilder::new(
+                        BaseBuilder::new().with_local_transform(TransformBuilder::new().build()),
+                    )
+                    .with_color(Color::RED)
+                    .build(&mut ctx.scene.graph),
+                ]),
+        )
+        // We don't want the player to tilt.
+        .with_rotation_locked(true)
+        // We don't want the rigid body to sleep (be excluded from simulation)
+        .with_can_sleep(false)
+        .build(&mut ctx.scene.graph);
+    }
 
     fn on_start(&mut self, #[allow(unused_variables)] ctx: &mut ScriptContext) {}
 
@@ -85,9 +135,9 @@ impl Player {
             .as_collider2d()
             .contacts(&ctx.scene.graph.physics2d)
         {
-            if //ctx.scene.graph[ctx.scene.graph[pair.collider2].parent()].has_script::<Ground>() ||
-                ctx.scene.graph[ctx.scene.graph[pair.collider1].parent()].has_script::<Ground>()
-            {
+            if
+            //ctx.scene.graph[ctx.scene.graph[pair.collider2].parent()].has_script::<Ground>() ||
+            ctx.scene.graph[ctx.scene.graph[pair.collider1].parent()].has_script::<Ground>() {
                 self.already_jumped = false;
                 break;
             }
