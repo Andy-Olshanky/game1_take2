@@ -82,8 +82,6 @@ impl ScriptTrait for Player {
         .with_rotation_locked(true)
         .with_can_sleep(false)
         .build(&mut ctx.scene.graph);
-
-        print!("\n\nCurrent script: {:?}\n\n\n", ctx.scene.graph[self.rigidbody].script());
     }
 
     fn on_start(&mut self, #[allow(unused_variables)] ctx: &mut ScriptContext) {}
