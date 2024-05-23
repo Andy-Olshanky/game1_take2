@@ -166,8 +166,6 @@ impl PluginConstructor for GameConstructor {
         let script_constructors = &context.serialization_context.script_constructors;
         script_constructors.add::<Player>("Player");
         script_constructors.add::<Ground>("Ground");
-        let thing = script_constructors.try_create(&Uuid::parse_str("2922cb59-aba7-46a1-aac7-5a3c6c3a7ded").unwrap());
-        print!("\n\nInitial thing: {:?}\n\n\n", thing);
     }
 
     fn create_instance(&self, scene_path: Option<&str>, context: PluginContext) -> Box<dyn Plugin> {
