@@ -1,4 +1,5 @@
 //! Game project.
+#[allow(unused)]
 use fyrox::{
     core::{
         algebra::{Vector2, Vector3},
@@ -29,7 +30,7 @@ use fyrox::{
         transform::TransformBuilder,
         Scene,
     },
-    script::{ScriptContext, ScriptTrait},
+    script::{Script, ScriptContext, ScriptTrait},
 };
 use std::path::Path;
 
@@ -47,11 +48,15 @@ struct Player {
 
 impl ScriptTrait for Player {
     fn on_init(&mut self, #[allow(unused_variables)] ctx: &mut ScriptContext) {
+        self.move_left = false;
+        self.move_right = false;
+        self.jump = false;
+        self.already_jumped = false;
+        self.jump_impulse = 10.15;
         self.rigidbody = RigidBodyBuilder::new(
             BaseBuilder::new()
                 .with_local_transform(
                     TransformBuilder::new()
-                        // Offset player a bit.
                         .with_local_position(Vector3::new(0.0, 3.7, 0.0))
                         .build(),
                 )
@@ -74,11 +79,12 @@ impl ScriptTrait for Player {
                     .build(&mut ctx.scene.graph),
                 ]),
         )
-        // We don't want the player to tilt.
         .with_rotation_locked(true)
-        // We don't want the rigid body to sleep (be excluded from simulation)
         .with_can_sleep(false)
         .build(&mut ctx.scene.graph);
+
+        //ctx.scene.graph[self.rigidbody].set_script(Some(self));
+        print!("\n\nCurrent script: {:?}\n\n\n", ctx.scene.graph[self.rigidbody].script());
     }
 
     fn on_start(&mut self, #[allow(unused_variables)] ctx: &mut ScriptContext) {}
@@ -105,7 +111,7 @@ impl ScriptTrait for Player {
     }
 
     fn on_update(&mut self, #[allow(unused_variables)] ctx: &mut ScriptContext) {
-        if let Some(rigidbody) = ctx.scene.graph[ctx.handle].cast::<RigidBody>() {
+        if let Some(rigidbody) = ctx.scene.graph[self.rigidbody].cast::<RigidBody>() {
             let x_speed = if self.move_left {
                 3.0
             } else if self.move_right {
@@ -160,6 +166,8 @@ impl PluginConstructor for GameConstructor {
         let script_constructors = &context.serialization_context.script_constructors;
         script_constructors.add::<Player>("Player");
         script_constructors.add::<Ground>("Ground");
+        let thing = script_constructors.try_create(&Uuid::parse_str("2922cb59-aba7-46a1-aac7-5a3c6c3a7ded").unwrap());
+        print!("\n\nInitial thing: {:?}\n\n\n", thing);
     }
 
     fn create_instance(&self, scene_path: Option<&str>, context: PluginContext) -> Box<dyn Plugin> {
