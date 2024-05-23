@@ -83,7 +83,6 @@ impl ScriptTrait for Player {
         .with_can_sleep(false)
         .build(&mut ctx.scene.graph);
 
-        //ctx.scene.graph[self.rigidbody].set_script(Some(self));
         print!("\n\nCurrent script: {:?}\n\n\n", ctx.scene.graph[self.rigidbody].script());
     }
 
@@ -124,7 +123,7 @@ impl ScriptTrait for Player {
                 self.check_ground_collision(ctx, rigidbody);
             }
 
-            if let Some(rigidbody) = ctx.scene.graph[ctx.handle].cast_mut::<RigidBody>() {
+            if let Some(rigidbody) = ctx.scene.graph[self.rigidbody].cast_mut::<RigidBody>() {
                 rigidbody.set_lin_vel(Vector2::new(x_speed, rigidbody.lin_vel().y));
                 if self.jump && !self.already_jumped {
                     rigidbody.apply_impulse(Vector2::new(0.0, self.jump_impulse));
@@ -137,7 +136,7 @@ impl ScriptTrait for Player {
 
 impl Player {
     pub fn check_ground_collision(&mut self, ctx: &ScriptContext, rigidbody: &RigidBody) {
-        for pair in ctx.scene.graph[rigidbody.children()[2]]
+        for pair in ctx.scene.graph[rigidbody.children()[1]]
             .as_collider2d()
             .contacts(&ctx.scene.graph.physics2d)
         {
