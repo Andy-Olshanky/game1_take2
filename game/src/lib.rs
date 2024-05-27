@@ -123,10 +123,8 @@ impl ScriptTrait for Player {
             }
 
             if let WindowEvent::CursorMoved { position, .. } = event {
-                if self.mouse_pressed {
-                    self.mouse_position.x = position.x;
-                    self.mouse_position.y = position.y;
-                }
+                self.mouse_position.x = position.x;
+                self.mouse_position.y = position.y;
             }
         }
     }
@@ -146,7 +144,8 @@ impl ScriptTrait for Player {
             }
 
             if self.mouse_pressed {
-                print!("Mouse pressed at {}\n", self.mouse_position);
+                print!("Mouse pressed at ({}, {})\n", self.mouse_position.x, self.mouse_position.y);
+                self.spawn_mouse(ctx);
             }
 
             if let Some(rigidbody) = ctx.scene.graph[self.rigidbody].cast_mut::<RigidBody>() {
@@ -161,6 +160,39 @@ impl ScriptTrait for Player {
 }
 
 impl Player {
+    pub fn spawn_mouse(&self, ctx: &mut ScriptContext) {
+        SpriteBuilder::new(
+            BaseBuilder::new()
+                .with_local_transform(
+                    TransformBuilder::new()
+                        .with_local_position(Vector3::new(
+                            self.mouse_position.x as f32,
+                            self.mouse_position.y as f32,
+                            0.0,
+                        ))
+                        .build(),
+                )
+                .with_children(&[
+                    ColliderBuilder::new(BaseBuilder::new())
+                        .with_shape(ColliderShape::cuboid(0.5, 0.5))
+                        .build(&mut ctx.scene.graph),
+                    RectangleBuilder::new(
+                        BaseBuilder::new().with_local_transform(
+                            TransformBuilder::new()
+                                .with_local_position(Vector3::new(
+                                    self.mouse_position.x as f32,
+                                    self.mouse_position.y as f32,
+                                    0.0,
+                                ))
+                                .build(),
+                        ),
+                    )
+                    .with_color(Color::GREEN)
+                    .build(&mut ctx.scene.graph),
+                ]),
+        );
+    }
+
     pub fn check_ground_collision(&mut self, ctx: &ScriptContext, rigidbody: &RigidBody) {
         for pair in ctx.scene.graph[rigidbody.children()[1]]
             .as_collider2d()
