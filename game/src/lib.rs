@@ -10,7 +10,7 @@ use fyrox::{
         type_traits::prelude::*,
         visitor::prelude::*,
     },
-    event::{ElementState, Event, WindowEvent, MouseButton},
+    event::{ElementState, Event, MouseButton, WindowEvent},
     gui::message::UiMessage,
     keyboard::{KeyCode, PhysicalKey},
     material::Material,
@@ -45,6 +45,7 @@ struct Player {
     jump_impulse: f32,
     rigidbody: Handle<Node>,
     mouse_pressed: bool,
+    mouse_position: Vector2<f64>,
 }
 
 impl ScriptTrait for Player {
@@ -55,6 +56,7 @@ impl ScriptTrait for Player {
         self.already_jumped = false;
         self.jump_impulse = 10.15;
         self.mouse_pressed = false;
+        self.mouse_position = Vector2::new(0.0, 0.0);
         self.rigidbody = RigidBodyBuilder::new(
             BaseBuilder::new()
                 .with_local_transform(
@@ -108,15 +110,22 @@ impl ScriptTrait for Player {
             }
             if let WindowEvent::MouseInput { state, button, .. } = event {
                 let is_pressed = *state == ElementState::Pressed;
-                
+
                 match button {
-                    MouseButton::Left => {self.mouse_pressed = is_pressed},
+                    MouseButton::Left => self.mouse_pressed = is_pressed,
                     _ => (),
                     // MouseButton::Right => todo!(),
                     // MouseButton::Middle => todo!(),
                     // MouseButton::Back => todo!(),
                     // MouseButton::Forward => todo!(),
                     // MouseButton::Other(_) => todo!(),
+                }
+            }
+
+            if let WindowEvent::CursorMoved { position, .. } = event {
+                if self.mouse_pressed {
+                    self.mouse_position.x = position.x;
+                    self.mouse_position.y = position.y;
                 }
             }
         }
@@ -137,7 +146,7 @@ impl ScriptTrait for Player {
             }
 
             if self.mouse_pressed {
-                print!("Mouse pressed\n");
+                print!("Mouse pressed at {}\n", self.mouse_position);
             }
 
             if let Some(rigidbody) = ctx.scene.graph[self.rigidbody].cast_mut::<RigidBody>() {
