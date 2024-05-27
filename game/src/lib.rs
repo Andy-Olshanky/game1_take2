@@ -10,7 +10,7 @@ use fyrox::{
         type_traits::prelude::*,
         visitor::prelude::*,
     },
-    event::{ElementState, Event, WindowEvent},
+    event::{ElementState, Event, WindowEvent, MouseButton},
     gui::message::UiMessage,
     keyboard::{KeyCode, PhysicalKey},
     material::Material,
@@ -44,6 +44,7 @@ struct Player {
     already_jumped: bool,
     jump_impulse: f32,
     rigidbody: Handle<Node>,
+    mouse_pressed: bool,
 }
 
 impl ScriptTrait for Player {
@@ -53,6 +54,7 @@ impl ScriptTrait for Player {
         self.jump = false;
         self.already_jumped = false;
         self.jump_impulse = 10.15;
+        self.mouse_pressed = false;
         self.rigidbody = RigidBodyBuilder::new(
             BaseBuilder::new()
                 .with_local_transform(
@@ -104,6 +106,19 @@ impl ScriptTrait for Player {
                     }
                 }
             }
+            if let WindowEvent::MouseInput { state, button, .. } = event {
+                let is_pressed = *state == ElementState::Pressed;
+                
+                match button {
+                    MouseButton::Left => {self.mouse_pressed = is_pressed},
+                    _ => (),
+                    // MouseButton::Right => todo!(),
+                    // MouseButton::Middle => todo!(),
+                    // MouseButton::Back => todo!(),
+                    // MouseButton::Forward => todo!(),
+                    // MouseButton::Other(_) => todo!(),
+                }
+            }
         }
     }
 
@@ -119,6 +134,10 @@ impl ScriptTrait for Player {
 
             if self.already_jumped {
                 self.check_ground_collision(ctx, rigidbody);
+            }
+
+            if self.mouse_pressed {
+                print!("Mouse pressed\n");
             }
 
             if let Some(rigidbody) = ctx.scene.graph[self.rigidbody].cast_mut::<RigidBody>() {
@@ -203,7 +222,7 @@ impl Plugin for Game {
         // Handle UI events here.
     }
 
-    fn on_scene_begin_loading(&mut self, path: &Path, ctx: &mut PluginContext) {
+    fn on_scene_begin_loading(&mut self, _path: &Path, ctx: &mut PluginContext) {
         if self.scene.is_some() {
             ctx.scenes.remove(self.scene);
         }
@@ -211,10 +230,10 @@ impl Plugin for Game {
 
     fn on_scene_loaded(
         &mut self,
-        path: &Path,
+        _path: &Path,
         scene: Handle<Scene>,
-        data: &[u8],
-        context: &mut PluginContext,
+        _data: &[u8],
+        _context: &mut PluginContext,
     ) {
         self.scene = scene;
     }
